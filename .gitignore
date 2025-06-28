@@ -195,3 +195,4 @@ cython_debug/
 .idea/
 *.csv
 *.zip
+.vscode/
