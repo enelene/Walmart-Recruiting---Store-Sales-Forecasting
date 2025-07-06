@@ -7,3 +7,5 @@ lightgbm
 mlflow
 optuna
 scikit-learn
+pmdarima
+dagshub
