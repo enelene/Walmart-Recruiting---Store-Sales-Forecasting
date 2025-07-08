@@ -1,11 +1,16 @@
-pandas
-numpy
-matplotlib
-seaborn
-kaggle
-lightgbm
-mlflow
-optuna
-scikit-learn
-pmdarima
-dagshub
+# Core Data Science Libraries
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.5.0
+matplotlib==3.8.4
+seaborn==0.13.2
+
+# MLflow and Experiment Tracking
+mlflow==2.13.1
+optuna==3.6.1
+wandb==0.17.0
+
+# Forecasting Libraries
+lightgbm==4.3.0
+statsmodels==0.14.2
+pmdarima==2.0.4

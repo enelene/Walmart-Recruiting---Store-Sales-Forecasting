@@ -49,8 +49,6 @@ mlflow.set_tracking_uri("https://dagshub.com/enelene/Walmart-Recruiting---Store-
 os.environ['MLFLOW_TRACKING_USERNAME'] = 'enelene'
 os.environ['MLFLOW_TRACKING_PASSWORD'] = 'cbe8109dbe80931664d754dbd476356414fa62a0'
 
-
-# --- 3.2: Set the Experiment ---
 EXPERIMENT_NAME = "ARIMA_SARIMA_Training"
 mlflow.set_experiment(EXPERIMENT_NAME)
 print(f"MLflow experiment set to: '{EXPERIMENT_NAME}'")
@@ -166,18 +164,14 @@ print("\nAuto-SARIMA experiment complete. Check your Dagshub dashboard.")
 
 # COMMAND ----------
 
-print("\n--- SECTION 3: ROBUST CANDIDATE SELECTION & DATA PREPARATION ---")
-
-# --- 3.1: Find a Good Candidate Time Series ---
 series_stats = train_df.groupby(['Store', 'Dept'])['Weekly_Sales'].agg(['mean', 'std', 'count']).dropna()
 series_stats['cov'] = series_stats['std'] / series_stats['mean']
-# FIX: Ensure the series has at least 143 data points (the full history)
 series_stats = series_stats[series_stats['count'] >= 143]
 best_candidate = series_stats.sort_values(by='cov', ascending=True).index[0]
 STORE_ID, DEPT_ID = best_candidate
 print(f"Selected a robust candidate series: Store {STORE_ID}, Department {DEPT_ID}")
 
-# --- 3.2: Prepare Data for SARIMAX ---
+#Prepare Data for SARIMAX 
 ts_df = train_df[(train_df['Store'] == STORE_ID) & (train_df['Dept'] == DEPT_ID)].copy()
 y = ts_df.set_index('Date')['Weekly_Sales'].asfreq('W-FRI').fillna(method='ffill')
 
@@ -189,7 +183,7 @@ X_exog = X_exog_raw.copy()
 X_exog[bool_cols] = X_exog[bool_cols].astype(int)
 print("All exogenous features are numeric.")
 
-# --- 3.3: Train-Test Split ---
+# Train-Test Split 
 train_size = int(len(y) * 0.8)
 y_train, y_test = y.iloc[:train_size], y.iloc[train_size:]
 X_train, X_test = X_exog.iloc[:train_size], X_exog.iloc[train_size:]
