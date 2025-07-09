@@ -2,6 +2,8 @@
 Kaggle competition as Final project for ML
 
 Elene's experiments: 
+https://dagshub.com/enelene/Walmart-Recruiting---Store-Sales-Forecasting
+https://wandb.ai/egabe21-free-university-of-tbilisi-/Walmart-Sales-Forecasting-DL?nw=nwuseregabe21
 
 File 1: 00_initial_data_exploration.ipynb
 Purpose: The single most important setup script. Its only job is to be run once to download the raw data from Kaggle, perform all the complex feature engineering using the logic from src/preprocessing.py, and save the final, clean train_processed_final.csv and test_processed_final.csv files. This ensures that all subsequent modeling notebooks start from the exact same, clean data source.
@@ -19,7 +21,10 @@ Key Moments:
 
 Sales Heatmap: This visualization proves the existence of strong yearly seasonality by showing that sales patterns (e.g., high in Nov/Dec, lower in Jan/Feb) are consistent across the years.
 ![image](https://github.com/user-attachments/assets/cea03bf4-a4b1-48b1-b7aa-1ffd9ce29790)
-
+![image](https://github.com/user-attachments/assets/91d0743a-6243-44a5-9de9-96ecac52497e)
+Because the trend is not flat, the data is non-stationary. (useful for an ARIMA model)
+Seasonal: For a SARIMA model, this tells you two things: you must use seasonal differencing (D=1), and seasonal period is m=52 (since it's weekly data repeating annually).
+Residuals: This is the random noise or error that's left over after the trend and seasonality have been removed.
 
 Correlation Matrix: This is a critical plot. It shows that there is no strong linear relationship between features like Temperature or CPI and Weekly_Sales. Thats why a simple linear regression model would fail and why we needed more complex models like LightGBM or Deep Learning, which can find non-linear patterns.
 ![image](https://github.com/user-attachments/assets/2ff41d4f-593c-4d3f-909a-539267f72f3d)
