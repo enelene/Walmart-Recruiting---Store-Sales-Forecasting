@@ -1,93 +1,67 @@
 # Walmart-Recruiting---Store-Sales-Forecasting
 Kaggle competition as Final project for ML
 
-Elene's experiments: 
-DAGSHUB LINK:
-https://dagshub.com/enelene/Walmart-Recruiting---Store-Sales-Forecasting
-WANDB LINK:
-https://wandb.ai/egabe21-free-university-of-tbilisi-/Walmart-Sales-Forecasting-DL?nw=nwuseregabe21
+* **Elene-ს ექსპერიმენტები:**
+    * **DAGSHUB-ის ბმული:** [https://dagshub.com/enelene/Walmart-Recruiting---Store-Sales-Forecasting](https://dagshub.com/enelene/Walmart-Recruiting---Store-Sales-Forecasting)
+    * **WANDB-ის ბმული:** [https://wandb.ai/egabe21-free-university-of-tbilisi-/Walmart-Sales-Forecasting-DL?nw=nwuseregabe21](https://wandb.ai/egabe21-free-university-of-tbilisi-/Walmart-Sales-Forecasting-DL?nw=nwuseregabe21)
 
-File 1: 00_initial_data_exploration.ipynb
-Purpose: The single most important setup script. Its only job is to be run once to download the raw data from Kaggle, perform all the complex feature engineering using the logic from src/preprocessing.py, and save the final, clean train_processed_final.csv and test_processed_final.csv files. This ensures that all subsequent modeling notebooks start from the exact same, clean data source.
+### **ფაილი 1: `00_initial_data_exploration.ipynb`**
 
-Key Moments:
+* **დანიშნულება:** ეს არის პროექტის საწყისი სკრიპტი. მისი მიზანია, ერთჯერადად გაეშვას, რათა Kaggle-დან გადმოწეროს საწყისი მონაცემები, `src/preprocessing.py` ფაილში არსებული ლოგიკის გამოყენებით შეასრულოს კომპლექსური feature engineering და შეინახოს საბოლოო, გასუფთავებული `train_processed_final.csv` და `test_processed_final.csv` ფაილები. ეს უზრუნველყოფს, რომ ყველა შემდგომი მოდელების ნოუთბუქი ზუსტად ერთი და იმავე, სუფთა მონაცემთა წყაროდან იწყებდეს მუშაობას.
+* **საკვანძო მომენტები:**
+    * **მონაცემთა გაერთიანება:** `stores.csv` და `features.csv` ფაილები გაერთიანდა `train.csv` და `test.csv` ფაილებთან `left` merge-ის გამოყენებით. ამით გაყიდვების მონაცემები გამდიდრდა კონტექსტუალური ინფორმაციით.
+    * **საბოლოო შედეგი:** მთავარი შედეგია საბოლოო, დამუშავებული CSV ფაილების შექმნა `data/processed` დირექტორიაში, რომელსაც ყველა სხვა ნოუთბუქი გამოიყენებს.
 
-Data Merging: It correctly performs a left merge to combine stores.csv and features.csv with the main train.csv and test.csv files. This enriches sales data with contextual information.
+### **ფაილი 2: `01_advanced_data_exploration.py`**
 
-Output: The key output is the final, processed CSV files in the data/processed directory, which all other notebooks will use.
+* **დანიშნულება:** დამუშავებული მონაცემების ვიზუალური კვლევა, რათა მივიღოთ მნიშვნელოვანი ინფორმაცია (insights). ეს ნოუთბუქი განკუთვნილია ანალიზისთვის.
+* **საკვანძო მომენტები:**
+    * **Heatmap:** ეს ვიზუალიზაცია ადასტურებს ძლიერი წლიური სეზონურობის არსებობას, რადგან გვიჩვენებს, რომ გაყიდვების დინამიკა (მაგ., მაღალი მაჩვენებელი ნოემბერ-დეკემბერში, დაბალი კი იანვარ-თებერვალში) თანმიმდევრულია წლების განმავლობაში.
+    ![image](https://github.com/user-attachments/assets/91d0743a-6243-44a5-9de9-96ecac52497e)
+    * ვინაიდან ტრენდი არ არის ბრტყელი, მონაცემები არასტაციონარულია (რაც მნიშვნელოვანია ARIMA მოდელისთვის). სეზონურობის გრაფიკი გვიჩვენებს, რომ SARIMA მოდელისთვის აუცილებელია სეზონური სხვაობის (`D=1`) და `m=52` პერიოდის გამოყენება. Residuals გრაფიკი კი წარმოადგენს შემთხვევით ხმაურს, რომელიც ტრენდისა და სეზონურობის მოკლების შემდეგ რჩება.
+    * **კორელაციის მატრიცა:** ეს კრიტიკულად მნიშვნელოვანი გრაფიკია. ის გვიჩვენებს, რომ არ არსებობს linear კავშირი ისეთ მახასიათებლებს შორის, როგორიცაა `Temperature` ან `CPI`, და `Weekly_Sales`-ს შორის. ეს ასაბუთებს, თუ რატომ იქნებოდა მარტივი Linear Regression მოდელი წარუმატებელი და რატომ დაგვჭირდა უფრო კომპლექსური მოდელები, როგორიცაა LightGBM ან Deep Learning.
+    ![image](https://github.com/user-attachments/assets/2ff41d4f-593c-4d3f-909a-539267f72f3d)
+    * **დეპარტამენტების Boxplot:** ეს გრაფიკი საუკეთესო ვიზუალური დასაბუთებაა `groupby(['Store', 'Dept'])` ლოგიკისთვის. ის ნათლად გვიჩვენებს, რომ სხვადასხვა დეპარტამენტს გაყიდვების რადიკალურად განსხვავებული მოცულობა და ცვალებადობა აქვს, რაც ამტკიცებს, რომ ისინი დამოუკიდებელ ერთეულებად უნდა განვიხილოთ.
+    ![image](https://github.com/user-attachments/assets/268c4225-f55e-4216-b97e-e3ef4e703335)
 
-File 2: 01_advanced_data_exploration.py
-Purpose: To visually explore the processed data to gain insights and justify your modeling decisions. This notebook is for analysis.
+### **ფაილი 3: `model_experiment_LightGBM.py`**
 
-Key Moments:
+* **დანიშნულება:** გლობალური LightGBM მოდელის გაწვრთნა, დაკონფიგურირება და შეფასება. ეს წარმოადგენს პროგნოზირების "feature-based" მიდგომას.
+* **საკვანძო მომენტები:**
+    * **გლობალური მოდელი:** ერთიანი მოდელის გაწვრთნა მთლიან მონაცემთა ბაზაზე. მოდელი ერთდროულად სწავლობს 3,000-ზე მეტი დროითი row-დან, რაც მას საშუალებას აძლევს, აღმოაჩინოს გლობალური პატერნები (მაგ., "Super Bowl-ის დროს ყველა ელექტრონიკის განყოფილებაში იზრდება გაყიდვები").
+    * **TimeSeriesSplit:** დროითი მწკრივების კროს-ვალიდაციის კორექტული მეთოდი, რომელიც უზრუნველყოფს, რომ მოდელი ყოველთვის წარსულ მონაცემებზე იწვრთნებოდეს და მომავალზე მოწმდებოდეს, რაც თავიდან გვაცილებს data leakage-ს.
+    * **ჰიპერპარამეტრების ოპტიმიზაცია Optuna-თი:** ოპტიმიზაციის ბიბლიოთეკის გამოყენება მოდელის საუკეთესო პარამეტრების ავტომატურად საპოვნელად.
+    * **Categorical მახასიათებლების მართვა:** LightGBM-ს პირდაპირ მიეწოდა ინფორმაცია Categorical სვეტების შესახებ, რაც უფრო ეფექტურია, ვიდრე one-hot encoding.
+    * **MLflow Pipeline:** შეიქმნა `pyfunc` pipeline, რომელიც აერთიანებს მონაცემთა დამუშავების ფუნქციას და გაწვრთნილ მოდელს.
 
-Sales Heatmap: This visualization proves the existence of strong yearly seasonality by showing that sales patterns (e.g., high in Nov/Dec, lower in Jan/Feb) are consistent across the years.
-![image](https://github.com/user-attachments/assets/cea03bf4-a4b1-48b1-b7aa-1ffd9ce29790)
-![image](https://github.com/user-attachments/assets/91d0743a-6243-44a5-9de9-96ecac52497e)
-Because the trend is not flat, the data is non-stationary. (useful for an ARIMA model)
-Seasonal: For a SARIMA model, this tells you two things: you must use seasonal differencing (D=1), and seasonal period is m=52 (since it's weekly data repeating annually).
-Residuals: This is the random noise or error that's left over after the trend and seasonality have been removed.
+### **ფაილი 4: `model_experiment_ARIMA.py`**
 
-Correlation Matrix: This is a critical plot. It shows that there is no strong linear relationship between features like Temperature or CPI and Weekly_Sales. Thats why a simple linear regression model would fail and why we needed more complex models like LightGBM or Deep Learning, which can find non-linear patterns.
-![image](https://github.com/user-attachments/assets/2ff41d4f-593c-4d3f-909a-539267f72f3d)
+* **დანიშნულება:** ლოკალური SARIMAX მოდელის train, tune და evaluate საუკეთესო კანდიდატების ნიმუშზე. ეს წარმოადგენს "classical statistical" მიდგომას.
+* **საკვანძო მომენტები:**
+    * **ლოკალური მოდელი:** ეს ნოუთბუქი LightGBM-ის საპირისპირო მიდგომას იყენებს. ის აგებს ცალკეულ, სპეციალიზებულ მოდელს თითოეული `Store-Dept` წყვილისთვის.
+    * **კანდიდატების შერჩევა:** შემთხვევითი სერიის არჩევის ნაცვლად, გამოყენებულია მონაცემებზე დაფუძნებული მიდგომა ყველაზე სტაბილური და სრული ისტორიის მქონე time series საპოვნელად.
+    * **ორ-ეტაპიანი ავტომატური მოდელირება:**
+        1.  **მახასიათებლების შერჩევა:** `RandomForest` მოდელის გამოყენებით, თითოეული სერიისთვის ავტომატურად შეირჩა 6 ყველაზე მნიშვნელოვანი გარე მახასიათებელი.
+        2.  **მართვადი `auto_arima`:** შემდეგ `auto_arima`-ს გადაეცა მხოლოდ ეს 6 საუკეთესო მახასიათებელი, რამაც გაუმარტივა და უფრო სტაბილური გახადა საუკეთესო დროითი პარამეტრების (`p,d,q,P,D,Q`) პოვნის პროცესი.
+    * **"X" SARIMAX-ში:** ჩვენ გამოვიყენეთ SARIMA**X**, სადაც "X" აღნიშნავს **eXogenous** (გარე) ცვლადებს. ეს ნიშნავს, რომ კლასიკური ARIMA მოდელი გავაძლიერეთ პირველ ეტაპზე შერჩეული გარე მახასიათებლებით.
 
+---
 
-Department Boxplot: This plot is the best visual justification for groupby(['Store', 'Dept']) logic. It clearly shows that different departments have vastly different sales volumes and volatility, proving that they must be treated as separate entities.
+### **ფაილები 5 & 6: `model_experiment_NBEATS.py` & `model_experiment_TFT_darts.py`**
 
-![image](https://github.com/user-attachments/assets/268c4225-f55e-4216-b97e-e3ef4e703335)
+* **დანიშნულება:** სიღრმული სწავლების გადაწყვეტილებების კვლევა `darts` ბიბლიოთეკის გამოყენებით, რომელიც უფრო სტაბილური აღმოჩნდა ჩვენს გარემოში.
+* **საკვანძო მომენტები:**
+    * **ახალ ბიბლიოთეკაზე გადასვლა (`darts`):** `pytorch-forecasting`-თან დაკავშირებული გარემოს ვერსიების მუდმივი და გადაუჭრელი კონფლიქტების გამო, პროექტის დასრულების უზრუნველსაყოფად გადავედით უფრო სტაბილურ `darts` ბიბლიოთეკაზე.
+    * **გლობალური vs. ლოკალური სიღრმულ სწავლებაში:** N-BEATS მოდელი გაიწვრთნა როგორც ლოკალური მოდელი (ერთ სერიაზე) და აჩვენა ცუდი შედეგი. TFT მოდელი კი გაიწვრთნა როგორც გლობალური მოდელი, ყველა სერიაზე ერთად.
+    * **`TimeSeries` ობიექტი:** `darts` იყენებს სპეციალურ `TimeSeries` ობიექტს, რომელიც აერთიანებს მონაცემებსა და მათ დროით ღერძს.
+    * **TFT-ის სიმძლავრე:** Temporal Fusion Transformer-ი ყველაზე მოწინავე მოდელია ჩვენს პროექტში. ის LightGBM-ის მსგავსად გლობალურია, მაგრამ მისი შიდა "ყურადღების მექანიზმი" (`attention mechanism`) სპეციალურად შექმნილია დროის გასაგებად და ავტომატურად სწავლობს, თუ რომელი მახასიათებლები და წარსულის მომენტებია ყველაზე მნიშვნელოვანი პროგნოზისთვის.
 
+---
 
-File 3: model_experiment_LightGBM.py
-Purpose: To train, tune, and evaluate a global LightGBM model. This represents the "feature-based" approach to forecasting.
+### **ფაილები 7 & 8: Inference ნოუთბუქები**
 
-Key Moments:
-
-Global Model: training one single model on the entire dataset. The model learns from all 3,000+ time series simultaneously, allowing it to discover global patterns (e.g., "all electronics departments get a sales boost during the Super Bowl").
-
-TimeSeriesSplit: This is the correct way to do cross-validation for time series data. It ensures that you always train on past data and validate on future data, preventing data leakage.
-
-Hyperparameter Tuning with Optuna: used a optimization library to automatically find the best settings for model. Optuna ran many trials to find the learning_rate and num_leaves that produced the lowest error.
-
-Categorical Feature Handling: give LightGBM info about which columns to treat as categories (Store, Dept, etc.). This is more efficient and often more effective than one-hot encoding for tree-based models.
-
-MLflow Pipeline (WalmartSalesPipeline): a custom pyfunc pipeline that bundles preprocessing function with trained model. This creates a single, robust artifact that can take raw data as input and produce predictions, which is essential for deployment and inference.
-
-File 4: model_experiment_ARIMA.py
-Purpose: To train, tune, and evaluate a local SARIMAX model for a sample of the best candidate series. This represents the "classical statistical" approach.
-
-Key Moments:
-
-Local Model: This notebook demonstrates the opposite approach of LightGBM. It builds a separate, specialized model for each individual Store-Dept pair.
-
-Candidate Selection: data-driven approach to find the most stable, complete time series to model, giving the architecture its best chance to succeed.
-
-Two-Stage Automated Modeling:
-
-Stage 1 (Feature Selection): used a RandomForest to automatically find the top 6 most important external features for that specific time series.
-
-Stage 2 (Guided auto_arima): then used auto_arima to find the best time series parameters (p,d,q,P,D,Q), but made its job easier and more stable by only giving it the 6 features it needed.
-
-The "X" in SARIMAX: used SARIMAX, where the "X" stands for eXogenous variables. This means using the classic ARIMA model by giving it the external features selected in Stage 1.
-
-Files 5 & 6: model_experiment_NBEATS.py & model_experiment_TFT_darts.py
-Purpose: To explore deep learning solutions using the darts library, which proved to be more stable in my environment. 
-Key Moments:
-
-Pivoting to a New Library (darts): We initially attempted to use pytorch-forecasting, but encountered persistent, environment-specific versioning errors. To overcome this and ensure project completion, we pivoted to the more stable darts library.
-
-Global vs. Local in Deep Learning:  N-BEATS model was a local model (trained on one series) and performed poorly, confirming the limitations of this approach. TFT model was a global model that learned from all series at once.
-
-The TimeSeries Object: darts uses a special TimeSeries object that bundles the data and its timeline together.
-
-The Power of TFT: the Temporal Fusion Transformer is the most advanced model you tested. It's a global model like LightGBM, but its internal "attention mechanism" is specifically designed to understand time and automatically learn which features and past time steps are most important, making it a very powerful tool for this kind of complex, multivariate problem.
-
-Files 7 & 8: The Inference Notebooks
-Purpose: To load a final, trained model from your experiment tracking server (Dagshub) and use it to generate a submission.csv file for Kaggle.
-
-Key Moments:
-
-Loading from the Model Registry: mlflow.pyfunc.load_model("models:/...")
-
-End-to-End Pipeline: For the LightGBM inference, loaded the WalmartSalesPipeline. it takes raw test data, performs all the advanced feature engineering internally, and outputs the final predictions. 
-
-Iterative Inference (for SARIMAX): For the SARIMAX submission, had to create a loop that re-trained a new model for every single row in the test set. You should present this as a key finding: while the local model approach is interesting, it is computationally impractical for real-world deployment, as it took a very long time to generate the submission file.
+* **დანიშნულება:** Dagshub-დან საბოლოო, გაწვრთნილი მოდელის ჩატვირთვა და `submission.csv` ფაილის გენერირება Kaggle-ზე წარსადგენად.
+* **საკვანძო მომენტები:**
+    * **მოდელის რეესტრიდან ჩატვირთვა:** ჩვენ არ ვტვირთავდით ლოკალურ ფაილს. ვიყენებდით `mlflow.pyfunc.load_model("models:/...")`-ს.
+    * **End-to-End Pipeline (LightGBM):** LightGBM-ის შემთხვევაში, ჩაიტვირთა `WalmartSalesPipeline`. ეს ობიექტი უზრუნველყოფს მთლიან პროცესს: იღებს **საწყის, დაუმუშავებელ** სატესტო მონაცემებს, შიდა ლოგიკით ასრულებს ყველა მახასიათებლის ინჟინერიას და აბრუნებს საბოლოო პროგნოზს.
+    * **იტერაციული Inference (SARIMAX):** SARIMAX-ის submission-ის გენერირებისთვის, საჭირო გახდა ციკლის შექმნა, რომელიც თითოეული სატესტო მწკრივისთვის **ხელახლა წვრთნიდა** ახალ მოდელს მიუხედავად იმისა, რომ ლოკალური მოდელის მიდგომა საინტერესოა, ის **გამოთვლითად არაპრაქტიკულია** რეალურ სამყაროში გამოსაყენებლად, რადგან submission ფაილის გენერირებას ძალიან დიდი დრო დასჭირდა.
