@@ -2,7 +2,9 @@
 Kaggle competition as Final project for ML
 
 Elene's experiments: 
+DAGSHUB LINK:
 https://dagshub.com/enelene/Walmart-Recruiting---Store-Sales-Forecasting
+WANDB LINK:
 https://wandb.ai/egabe21-free-university-of-tbilisi-/Walmart-Sales-Forecasting-DL?nw=nwuseregabe21
 
 File 1: 00_initial_data_exploration.ipynb
