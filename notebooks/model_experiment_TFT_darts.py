@@ -24,13 +24,18 @@ import os
 import warnings
 import wandb
 import torch
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 # Import from the darts library
 from darts import TimeSeries
 from darts.models import TFTModel
 from darts.dataprocessing.transformers import Scaler
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
+from pytorch_lightning.loggers import WandbLogger
+from darts.metrics import wmae, mae, rmse, mape
+
+# PyTorch Lightning imports for advanced training control
+from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
 
 warnings.filterwarnings("ignore")
@@ -42,21 +47,27 @@ wandb.login(key = "720b5644412076fa3e35eb1ffccab9895b8369db")
 
 PROCESSED_DIR = '/dbfs/FileStore/walmart_project/data/processed'
 TRAIN_PATH = os.path.join(PROCESSED_DIR, 'train_processed_final.csv')
+VALIDATION_PATH = os.path.join(PROCESSED_DIR, 'validation_final.csv')
+
+# COMMAND ----------
+
+INPUT_CHUNK_LENGTH = 52  # Model looks at 36 weeks of history
+OUTPUT_CHUNK_LENGTH = 39 # Model predicts 12 weeks into the future
+MIN_SERIES_LENGTH = INPUT_CHUNK_LENGTH + OUTPUT_CHUNK_LENGTH
+
+# --- Load Data ---
 try:
-    df = pd.read_csv(TRAIN_PATH, parse_dates=['Date'])
-    print("Successfully loaded processed training data.")
+    train_df = pd.read_csv(TRAIN_PATH, parse_dates=['Date'])
+    validation_df = pd.read_csv(VALIDATION_PATH, parse_dates=['Date'])
+    print("Successfully loaded pre-split training and validation data.")
 except FileNotFoundError:
-    dbutils.notebook.exit("Data preparation notebook must be run first.")
+    print("ERROR: Processed data not found. Please run the preprocessing script first.")
+    # dbutils.notebook.exit("Data preparation notebook must be run first.")
+
 
 
 # COMMAND ----------
 
-
-# --- 4.1: Filter for series that are long enough for training and validation ---
-# A series needs to be at least input_chunk_length + output_chunk_length long.
-INPUT_CHUNK_LENGTH = 36
-OUTPUT_CHUNK_LENGTH = 8
-MIN_SERIES_LENGTH = INPUT_CHUNK_LENGTH + OUTPUT_CHUNK_LENGTH
 
 series_lengths = df.groupby(['Store', 'Dept']).size()
 long_enough_series = series_lengths[series_lengths >= MIN_SERIES_LENGTH].index
@@ -64,9 +75,48 @@ long_enough_series = series_lengths[series_lengths >= MIN_SERIES_LENGTH].index
 df_filtered = df.set_index(['Store', 'Dept']).loc[long_enough_series].reset_index()
 print(f"Filtered data to {len(long_enough_series)} series that are long enough for the model.")
 
-# --- 4.2: Convert DataFrame to a List of TimeSeries objects ---
+# COMMAND ----------
+
 print("Converting DataFrame to list of Darts TimeSeries objects...")
-# This is the standard way to prepare data for global models in Darts.
+target_col = 'Weekly_Sales'
+future_cov_cols = ['Year', 'Month', 'WeekOfYear', 'Day'] + [col for col in df.columns if 'Is' in col and 'Week' in col]
+past_cov_cols = [col for col in df.columns if col not in [target_col, 'Date', 'Store', 'Dept', 'Store_Dept'] + future_cov_cols]
+
+# Target Series (the value we want to predict)
+target_series = TimeSeries.from_group_dataframe(
+    df_filtered, group_cols=['Store', 'Dept'], time_col='Date',
+    value_cols=target_col, freq='W-FRI', fill_missing_dates=True, fillna_value=0
+)
+# Past Covariates (features not known in the future)
+past_covariates = TimeSeries.from_group_dataframe(
+    df_filtered, group_cols=['Store', 'Dept'], time_col='Date',
+    value_cols=past_cov_cols, freq='W-FRI', fill_missing_dates=True, fillna_value=0
+)
+# Future Covariates (features known in the future)
+future_covariates = TimeSeries.from_group_dataframe(
+    df_filtered, group_cols=['Store', 'Dept'], time_col='Date',
+    value_cols=future_cov_cols, freq='W-FRI', fill_missing_dates=True, fillna_value=0
+)
+
+
+
+
+# COMMAND ----------
+
+# --- 4.4: Normalize the Data ---
+print("Scaling the data...")
+# It's crucial to scale the data for deep learning models.
+scaler_target = Scaler()
+scaler_past = Scaler()
+scaler_future = Scaler()
+
+scaled_target = scaler_target.fit_transform(target_series)
+scaled_past = scaler_past.fit_transform(past_covariates)
+scaled_future = scaler_future.fit_transform(future_covariates)
+
+# COMMAND ----------
+
+
 all_series = TimeSeries.from_group_dataframe(
     df_filtered,
     group_cols=['Store', 'Dept'],

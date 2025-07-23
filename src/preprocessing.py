@@ -10,6 +10,7 @@ def advanced_feature_engineering(df):
     if 'Weekly_Sales' in df_copy.columns:
         df_copy['Weekly_Sales'] = df_copy['Weekly_Sales'].clip(lower=0)
 
+
     thanksgiving_dates = pd.to_datetime(["2010-11-26", "2011-11-25"])
     super_bowl_dates = pd.to_datetime(["2010-02-12", "2011-02-11", "2012-02-10"])
     labor_day_dates = pd.to_datetime(["2010-09-10", "2011-09-09", "2012-09-07"])
@@ -30,7 +31,7 @@ def advanced_feature_engineering(df):
     df_copy.sort_values(by=['Store', 'Dept', 'Date'], inplace=True)
     if 'Weekly_Sales' in df_copy.columns:
         # More Lag Features
-        lags = [1, 2, 3, 4, 52]
+        lags = [1, 2, 4, 13, 26, 52] # 1-2 weeks, 1 month, 1 quarter, half-year, 1 year
         for lag in lags:
             df_copy[f'Sales_Lag_{lag}'] = df_copy.groupby(['Store', 'Dept'])['Weekly_Sales'].shift(lag)
             
@@ -54,10 +55,19 @@ def advanced_feature_engineering(df):
     df_copy[markdown_cols] = df_copy[markdown_cols].fillna(0)
     df_copy['HasMarkdown'] = (df_copy[markdown_cols].sum(axis=1) > 0).astype(int)
 
-    # --- Feature 5: Interaction Features ---
+    # -- Feature Group 5: Weekly Returns  --
+    if 'Weekly_Sales' in df.columns:
+        df['Weekly_Returns'] = df.groupby(['Store', 'Dept'])['Weekly_Sales'].pct_change()
+
+    # --- Feature 6: Interaction Features ---
     # Create a combined Store and Department feature.
     # We will treat this as a category in LightGBM.
     df_copy['Store_Dept'] = df_copy['Store'].astype(str) + '_' + df_copy['Dept'].astype(str)
+    df_copy['Store_Dept'] = df_copy['Store_Dept'].astype('category')
+
+    # --- Encoding and Final Cleanup ---
+    # One-hot encode 'Type'
+    df_copy = pd.get_dummies(df_copy, columns=['Type'], prefix='Type')
     
     # --- Final Data Cleaning ---
     # Fill any remaining NaNs that were created by lag/rolling features
@@ -65,11 +75,4 @@ def advanced_feature_engineering(df):
     df_copy.fillna(method='bfill', inplace=True)
     df_copy.fillna(0, inplace=True)
 
-    # --- Encoding and Final Cleanup ---
-    # One-hot encode 'Type'
-    df_copy = pd.get_dummies(df_copy, columns=['Type'], prefix='Type')
-    
-    # Convert Store_Dept to a category type for LightGBM
-    df_copy['Store_Dept'] = df_copy['Store_Dept'].astype('category')
-    
     return df_copy
