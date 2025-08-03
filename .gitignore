@@ -197,3 +197,5 @@ cython_debug/
 *.zip
 .vscode/
 ./notebooks/wandb/
+./data1
+./data
